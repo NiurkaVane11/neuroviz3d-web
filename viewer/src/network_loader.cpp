@@ -93,6 +93,11 @@ struct JsonParser {
         for (float f : floats) arr.push_back((int)f);
         return arr;
     }
+    glm::vec3 parseVec3() {
+        auto v = parseFloatArray();
+        if (v.size() != 3) throw std::runtime_error("JSON: se esperaba vec3 de 3 componentes");
+        return glm::vec3(v[0], v[1], v[2]);
+    }
 };
 
 } // namespace
@@ -287,4 +292,70 @@ TrainingHistory loadTrainingHistoryFromJSON(const std::string& path) {
     }
 
     return hist;
+}
+
+EmbeddingSet loadEmbeddingsFromJSON(const std::string& path) {
+    EmbeddingSet result;
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        std::cerr << "No se pudo abrir " << path << "\n";
+        return result;
+    }
+
+    std::stringstream buf;
+    buf << file.rdbuf();
+    std::string content = buf.str();
+
+    try {
+        JsonParser p(content);
+        p.expect('{');
+        while (true) {
+            std::string key = p.parseKey();
+
+            if (key == "numSamples") {
+                p.parseNumber();
+            } else if (key == "numClasses") {
+                result.num_classes = (int)p.parseNumber();
+            } else if (key == "samples") {
+                p.expect('[');
+                p.skipWhitespace();
+                if (!p.match(']')) {
+                    while (true) {
+                        p.expect('{');
+                        EmbeddingSample sample;
+                        while (true) {
+                            std::string sk = p.parseKey();
+                            if (sk == "index") sample.index = (int)p.parseNumber();
+                            else if (sk == "label") sample.true_label = (int)p.parseNumber();
+                            else if (sk == "predicted") sample.predicted_label = (int)p.parseNumber();
+                            else if (sk == "pca") sample.pca_position = p.parseVec3();
+                            else if (sk == "tsne") sample.tsne_position = p.parseVec3();
+                            p.skipWhitespace();
+                            if (p.match(',')) continue;
+                            p.expect('}');
+                            break;
+                        }
+                        result.samples.push_back(sample);
+                        p.skipWhitespace();
+                        if (p.match(',')) continue;
+                        p.expect(']');
+                        break;
+                    }
+                }
+            }
+
+            p.skipWhitespace();
+            if (p.match(',')) continue;
+            p.expect('}');
+            break;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error parseando " << path << ": " << e.what() << "\n";
+        result.samples.clear();
+        result.valid = false;
+        return result;
+    }
+
+    result.valid = !result.samples.empty();
+    return result;
 }

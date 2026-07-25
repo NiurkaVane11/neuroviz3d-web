@@ -34,6 +34,16 @@ const float SEGMENT_DURATION = 0.8f;
 const float INPUT_MIN_GLOW = 0.18f;
 
 const char* IRIS_CLASS_NAMES[3] = { "Iris-setosa", "Iris-versicolor", "Iris-virginica" };
+enum class ViewMode { NETWORK, EMBEDDING };
+enum class ProjectionType { PCA, TSNE };
+ViewMode currentMode = ViewMode::NETWORK;
+ProjectionType currentProjection = ProjectionType::PCA;
+ProjectionType previousProjection = ProjectionType::PCA;
+bool projectionTransitioning = false;
+double projectionTransitionStart = 0.0;
+const float PROJECTION_TRANSITION_DURATION = 1.5f;
+bool ePressedLastFrame = false;
+bool pPressedLastFrame = false;
 
 // Rectangulo de la grafica en coordenadas de pantalla (pixeles), esquina superior derecha
 const float GRAPH_MARGIN = 20.0f;
@@ -88,20 +98,29 @@ float normalizeActivation(float value, const std::vector<float>& layerActivation
     for (float v : layerActivations) maxAbs = std::max(maxAbs, std::fabs(v));
     return std::clamp(std::fabs(value) / maxAbs, 0.0f, 1.0f);
 }
-
 glm::vec3 emissiveColor(float intensity) {
     glm::vec3 low(0.0f, 0.0f, 0.0f);
     glm::vec3 high(1.4f, 1.1f, 0.5f);
     return glm::mix(low, high, intensity);
 }
-
+glm::vec3 classColor(int label) {
+    switch (label) {
+        case 0: return glm::vec3(0.0f, 0.85f, 0.95f);
+        case 1: return glm::vec3(1.0f, 0.85f, 0.3f);
+        default: return glm::vec3(0.95f, 0.35f, 0.25f);
+    }
+}
 void updateWindowTitle(GLFWwindow* window, const ActivationSample* sample) {
     if (!sample) {
-        glfwSetWindowTitle(window, "NeuroViz3D - Fase 6 (SPACE = forward pass, T = training)");
+        std::string modeLabel = (currentMode == ViewMode::EMBEDDING)
+            ? (currentProjection == ProjectionType::PCA ? " | Embedding: PCA" : " | Embedding: t-SNE")
+            : " | Red";
+        std::string title = "NeuroViz3D - Fase 7 (SPACE=forward pass, T=training, E=embedding, P=PCA/t-SNE)" + modeLabel;
+        glfwSetWindowTitle(window, title.c_str());
         return;
     }
     std::ostringstream oss;
-    oss << "NeuroViz3D - Fase 6 | Real: " << IRIS_CLASS_NAMES[sample->true_label]
+    oss << "NeuroViz3D - Fase 7 | Real: " << IRIS_CLASS_NAMES[sample->true_label]
         << " | Prediccion: " << IRIS_CLASS_NAMES[sample->predicted_label]
         << (sample->true_label == sample->predicted_label ? " (correcto)" : " (incorrecto)");
     glfwSetWindowTitle(window, oss.str().c_str());
@@ -189,6 +208,13 @@ int main() {
                   << " epocas, tecla T)" << std::endl;
     } else {
         std::cout << "[main] training_history.json no disponible; T no hara nada" << std::endl;
+    }
+    EmbeddingSet embeddings = loadEmbeddingsFromJSON("embeddings.json");
+    if (embeddings.valid) {
+        std::cout << "[main] " << embeddings.samples.size()
+                  << " embeddings listos (E = modo embedding, P = PCA/t-SNE)" << std::endl;
+    } else {
+        std::cout << "[main] embeddings.json no disponible; tecla E no hara nada" << std::endl;
     }
 
     updateWindowTitle(window, nullptr);
@@ -279,6 +305,31 @@ int main() {
         }
         tPressedLastFrame = tPressed;
 
+        bool ePressed = glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS;
+        if (ePressed && !ePressedLastFrame && embeddings.valid) {
+            currentMode = (currentMode == ViewMode::NETWORK) ? ViewMode::EMBEDDING : ViewMode::NETWORK;
+            updateWindowTitle(window, nullptr);
+        }
+        ePressedLastFrame = ePressed;
+
+        bool pPressed = glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS;
+        if (pPressed && !pPressedLastFrame && currentMode == ViewMode::EMBEDDING) {
+            previousProjection = currentProjection;
+            currentProjection = (currentProjection == ProjectionType::PCA)
+                ? ProjectionType::TSNE : ProjectionType::PCA;
+            updateWindowTitle(window, nullptr);
+            projectionTransitioning = true;
+            projectionTransitionStart = glfwGetTime();
+        }
+        pPressedLastFrame = pPressed;
+
+        if (projectionTransitioning) {
+            double transitionElapsed = glfwGetTime() - projectionTransitionStart;
+            if (transitionElapsed >= PROJECTION_TRANSITION_DURATION) {
+                projectionTransitioning = false;
+            }
+        }
+
         double elapsed = animating ? (glfwGetTime() - animStartTime) : 0.0;
         float totalDuration = SEGMENT_DURATION * (float)numLayerGaps;
 
@@ -327,6 +378,28 @@ int main() {
         const ActivationSample* activeSample = (activations.valid && activeSampleIdx >= 0)
             ? &activations.samples[activeSampleIdx] : nullptr;
 
+        if (currentMode == ViewMode::EMBEDDING) {
+            float t = 1.0f;
+            if (projectionTransitioning) {
+                double transEl = glfwGetTime() - projectionTransitionStart;
+                t = glm::clamp(static_cast<float>(transEl / PROJECTION_TRANSITION_DURATION), 0.0f, 1.0f);
+                t = t * t * (3.0f - 2.0f * t);
+            }
+            for (const auto& s : embeddings.samples) {
+                glm::vec3 fromPos = (previousProjection == ProjectionType::PCA) ? s.pca_position : s.tsne_position;
+                glm::vec3 toPos   = (currentProjection  == ProjectionType::PCA) ? s.pca_position : s.tsne_position;
+                glm::vec3 pos = projectionTransitioning ? glm::mix(fromPos, toPos, t) : toPos;
+                glm::mat4 model = glm::translate(glm::mat4(1.0f), pos);
+                model = glm::scale(model, glm::vec3(0.55f));
+                sphereShader.setMat4("uModel", model);
+                glm::vec3 color = classColor(s.true_label);
+                sphereShader.setVec3("uColor", color);
+                bool misclassified = (s.predicted_label != s.true_label);
+                glm::vec3 embEmissive = misclassified ? color * 0.9f : color * 0.15f;
+                sphereShader.setVec3("uEmissive", embEmissive);
+                sphere.draw();
+            }
+        } else {
         for (size_t l = 0; l < positions.size(); ++l) {
             for (size_t i = 0; i < positions[l].size(); ++i) {
                 glm::mat4 model = glm::translate(glm::mat4(1.0f), positions[l][i]);
@@ -343,6 +416,7 @@ int main() {
                 sphereShader.setVec3("uEmissive", emissive);
                 sphere.draw();
             }
+        }
         }
 
         if (activeGap >= 0 && activeSample) {

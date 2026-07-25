@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <glm/glm.hpp>
 
 struct LayerWeights {
     std::string name;
@@ -38,3 +39,17 @@ struct TrainingHistory {
 NetworkArchitecture loadNetworkFromJSON(const std::string& path);
 ActivationSet loadActivationsFromJSON(const std::string& path);
 TrainingHistory loadTrainingHistoryFromJSON(const std::string& path);
+
+struct EmbeddingSample {
+    int index = -1;
+    int true_label = -1;
+    int predicted_label = -1;
+    glm::vec3 pca_position;
+    glm::vec3 tsne_position;
+};
+struct EmbeddingSet {
+    std::vector<EmbeddingSample> samples;
+    int num_classes = 3;
+    bool valid = false;
+};
+EmbeddingSet loadEmbeddingsFromJSON(const std::string& path);
