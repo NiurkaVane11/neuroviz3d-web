@@ -224,6 +224,30 @@ src/mesh.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\neuroviz3d.dir\build.make CMakeFiles/neuroviz3d.dir/src/mesh.cpp.s
 .PHONY : src/mesh.cpp.s
 
+src/network_loader.obj: src/network_loader.cpp.obj
+.PHONY : src/network_loader.obj
+
+# target to build an object file
+src/network_loader.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\neuroviz3d.dir\build.make CMakeFiles/neuroviz3d.dir/src/network_loader.cpp.obj
+.PHONY : src/network_loader.cpp.obj
+
+src/network_loader.i: src/network_loader.cpp.i
+.PHONY : src/network_loader.i
+
+# target to preprocess a source file
+src/network_loader.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\neuroviz3d.dir\build.make CMakeFiles/neuroviz3d.dir/src/network_loader.cpp.i
+.PHONY : src/network_loader.cpp.i
+
+src/network_loader.s: src/network_loader.cpp.s
+.PHONY : src/network_loader.s
+
+# target to generate assembly for a file
+src/network_loader.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\neuroviz3d.dir\build.make CMakeFiles/neuroviz3d.dir/src/network_loader.cpp.s
+.PHONY : src/network_loader.cpp.s
+
 src/shader.obj: src/shader.cpp.obj
 .PHONY : src/shader.obj
 
@@ -269,6 +293,9 @@ help:
 	@echo ... src/mesh.obj
 	@echo ... src/mesh.i
 	@echo ... src/mesh.s
+	@echo ... src/network_loader.obj
+	@echo ... src/network_loader.i
+	@echo ... src/network_loader.s
 	@echo ... src/shader.obj
 	@echo ... src/shader.i
 	@echo ... src/shader.s

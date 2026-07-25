@@ -6,9 +6,11 @@
 #include <vector>
 #include <random>
 #include <cmath>
+#include <algorithm>
 #include "shader.h"
 #include "mesh.h"
 #include "camera.h"
+#include "network_loader.h"
 
 const unsigned int SCR_WIDTH = 900;
 const unsigned int SCR_HEIGHT = 700;
@@ -68,7 +70,7 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "NeuroViz3D - Fase 3", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "NeuroViz3D - Fase 4", nullptr, nullptr);
     if (window == nullptr) {
         std::cerr << "ERROR: no se pudo crear la ventana GLFW" << std::endl;
         glfwTerminate();
@@ -108,15 +110,39 @@ int main() {
         }
     }
 
-    // Pesos simulados por conexion (Fase 4 los reemplaza con pesos reales de PyTorch)
+    // Fase 4: intenta cargar pesos reales de PyTorch; si no existe o no coincide, cae a random (seed 42)
+    NetworkArchitecture net = loadNetworkFromJSON("network.json");
+    bool useRealWeights = net.valid && net.layers.size() == positions.size() - 1;
+
+    if (net.valid && !useRealWeights) {
+        std::cerr << "[main] network.json cargado pero no coincide con layerSizes fijo {4,8,6,3}; "
+                     "usando fallback random." << std::endl;
+    }
+    if (useRealWeights) {
+        std::cout << "[main] Usando pesos reales de PyTorch (network.json)" << std::endl;
+    } else {
+        std::cout << "[main] network.json no disponible; usando pesos random (fallback, seed 42)" << std::endl;
+    }
+
     std::mt19937 rng(42);
     std::uniform_real_distribution<float> weightDist(-1.0f, 1.0f);
 
     std::vector<float> lineVerts;
     for (size_t l = 0; l + 1 < positions.size(); ++l) {
-        for (auto& p0 : positions[l]) {
-            for (auto& p1 : positions[l + 1]) {
-                float w = weightDist(rng);
+        for (size_t i0 = 0; i0 < positions[l].size(); ++i0) {
+            for (size_t i1 = 0; i1 < positions[l + 1].size(); ++i1) {
+                glm::vec3 p0 = positions[l][i0];
+                glm::vec3 p1 = positions[l + 1][i1];
+
+                float w;
+                if (useRealWeights) {
+                    // weights[out][in] -> out = neurona destino (i1), in = neurona origen (i0)
+                    w = net.layers[l].weights[i1][i0];
+                    w = std::max(-1.0f, std::min(1.0f, w));
+                } else {
+                    w = weightDist(rng);
+                }
+
                 glm::vec3 c = weightColor(w);
                 lineVerts.push_back(p0.x); lineVerts.push_back(p0.y); lineVerts.push_back(p0.z);
                 lineVerts.push_back(c.r); lineVerts.push_back(c.g); lineVerts.push_back(c.b);

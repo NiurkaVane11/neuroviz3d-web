@@ -349,6 +349,13 @@ CMakeFiles/neuroviz3d.dir/src/main.cpp.obj: \
  C:/msys64/mingw64/include/c++/15.2.0/bits/stl_numeric.h \
  C:/msys64/mingw64/include/c++/15.2.0/pstl/glue_numeric_defs.h \
  C:/msys64/mingw64/include/c++/15.2.0/pstl/execution_defs.h \
+ C:/msys64/mingw64/include/c++/15.2.0/algorithm \
+ C:/msys64/mingw64/include/c++/15.2.0/bits/stl_algo.h \
+ C:/msys64/mingw64/include/c++/15.2.0/bits/algorithmfwd.h \
+ C:/msys64/mingw64/include/c++/15.2.0/bits/stl_heap.h \
+ C:/msys64/mingw64/include/c++/15.2.0/bits/stl_tempbuf.h \
+ C:/msys64/mingw64/include/c++/15.2.0/pstl/glue_algorithm_defs.h \
  C:\Users\USUARIO\neuroviz3d-web\viewer\src\shader.h \
  C:\Users\USUARIO\neuroviz3d-web\viewer\src\mesh.h \
- C:\Users\USUARIO\neuroviz3d-web\viewer\src\camera.h
+ C:\Users\USUARIO\neuroviz3d-web\viewer\src\camera.h \
+ C:\Users\USUARIO\neuroviz3d-web\viewer\src\network_loader.h

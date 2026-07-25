@@ -131,11 +131,26 @@ CMakeFiles/neuroviz3d.dir/src/camera.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/neuroviz3d.dir/src/camera.cpp.s"
 	C:\msys64\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:\Users\USUARIO\neuroviz3d-web\viewer\src\camera.cpp -o CMakeFiles\neuroviz3d.dir\src\camera.cpp.s
 
+CMakeFiles/neuroviz3d.dir/src/network_loader.cpp.obj: CMakeFiles/neuroviz3d.dir/flags.make
+CMakeFiles/neuroviz3d.dir/src/network_loader.cpp.obj: CMakeFiles/neuroviz3d.dir/includes_CXX.rsp
+CMakeFiles/neuroviz3d.dir/src/network_loader.cpp.obj: C:/Users/USUARIO/neuroviz3d-web/viewer/src/network_loader.cpp
+CMakeFiles/neuroviz3d.dir/src/network_loader.cpp.obj: CMakeFiles/neuroviz3d.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=C:\Users\USUARIO\neuroviz3d-web\viewer\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/neuroviz3d.dir/src/network_loader.cpp.obj"
+	C:\msys64\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/neuroviz3d.dir/src/network_loader.cpp.obj -MF CMakeFiles\neuroviz3d.dir\src\network_loader.cpp.obj.d -o CMakeFiles\neuroviz3d.dir\src\network_loader.cpp.obj -c C:\Users\USUARIO\neuroviz3d-web\viewer\src\network_loader.cpp
+
+CMakeFiles/neuroviz3d.dir/src/network_loader.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/neuroviz3d.dir/src/network_loader.cpp.i"
+	C:\msys64\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:\Users\USUARIO\neuroviz3d-web\viewer\src\network_loader.cpp > CMakeFiles\neuroviz3d.dir\src\network_loader.cpp.i
+
+CMakeFiles/neuroviz3d.dir/src/network_loader.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/neuroviz3d.dir/src/network_loader.cpp.s"
+	C:\msys64\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:\Users\USUARIO\neuroviz3d-web\viewer\src\network_loader.cpp -o CMakeFiles\neuroviz3d.dir\src\network_loader.cpp.s
+
 CMakeFiles/neuroviz3d.dir/external/glad/src/glad.c.obj: CMakeFiles/neuroviz3d.dir/flags.make
 CMakeFiles/neuroviz3d.dir/external/glad/src/glad.c.obj: CMakeFiles/neuroviz3d.dir/includes_C.rsp
 CMakeFiles/neuroviz3d.dir/external/glad/src/glad.c.obj: C:/Users/USUARIO/neuroviz3d-web/viewer/external/glad/src/glad.c
 CMakeFiles/neuroviz3d.dir/external/glad/src/glad.c.obj: CMakeFiles/neuroviz3d.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=C:\Users\USUARIO\neuroviz3d-web\viewer\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building C object CMakeFiles/neuroviz3d.dir/external/glad/src/glad.c.obj"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=C:\Users\USUARIO\neuroviz3d-web\viewer\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building C object CMakeFiles/neuroviz3d.dir/external/glad/src/glad.c.obj"
 	C:\msys64\mingw64\bin\cc.exe $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/neuroviz3d.dir/external/glad/src/glad.c.obj -MF CMakeFiles\neuroviz3d.dir\external\glad\src\glad.c.obj.d -o CMakeFiles\neuroviz3d.dir\external\glad\src\glad.c.obj -c C:\Users\USUARIO\neuroviz3d-web\viewer\external\glad\src\glad.c
 
 CMakeFiles/neuroviz3d.dir/external/glad/src/glad.c.i: cmake_force
@@ -152,6 +167,7 @@ neuroviz3d_OBJECTS = \
 "CMakeFiles/neuroviz3d.dir/src/shader.cpp.obj" \
 "CMakeFiles/neuroviz3d.dir/src/mesh.cpp.obj" \
 "CMakeFiles/neuroviz3d.dir/src/camera.cpp.obj" \
+"CMakeFiles/neuroviz3d.dir/src/network_loader.cpp.obj" \
 "CMakeFiles/neuroviz3d.dir/external/glad/src/glad.c.obj"
 
 # External object files for target neuroviz3d
@@ -161,13 +177,14 @@ neuroviz3d.exe: CMakeFiles/neuroviz3d.dir/src/main.cpp.obj
 neuroviz3d.exe: CMakeFiles/neuroviz3d.dir/src/shader.cpp.obj
 neuroviz3d.exe: CMakeFiles/neuroviz3d.dir/src/mesh.cpp.obj
 neuroviz3d.exe: CMakeFiles/neuroviz3d.dir/src/camera.cpp.obj
+neuroviz3d.exe: CMakeFiles/neuroviz3d.dir/src/network_loader.cpp.obj
 neuroviz3d.exe: CMakeFiles/neuroviz3d.dir/external/glad/src/glad.c.obj
 neuroviz3d.exe: CMakeFiles/neuroviz3d.dir/build.make
 neuroviz3d.exe: C:/msys64/mingw64/lib/libglfw3.dll.a
 neuroviz3d.exe: CMakeFiles/neuroviz3d.dir/linkLibs.rsp
 neuroviz3d.exe: CMakeFiles/neuroviz3d.dir/objects1.rsp
 neuroviz3d.exe: CMakeFiles/neuroviz3d.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=C:\Users\USUARIO\neuroviz3d-web\viewer\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Linking CXX executable neuroviz3d.exe"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=C:\Users\USUARIO\neuroviz3d-web\viewer\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Linking CXX executable neuroviz3d.exe"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles\neuroviz3d.dir\link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

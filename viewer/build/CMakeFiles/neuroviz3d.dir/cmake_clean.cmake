@@ -7,6 +7,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/neuroviz3d.dir/src/main.cpp.obj.d"
   "CMakeFiles/neuroviz3d.dir/src/mesh.cpp.obj"
   "CMakeFiles/neuroviz3d.dir/src/mesh.cpp.obj.d"
+  "CMakeFiles/neuroviz3d.dir/src/network_loader.cpp.obj"
+  "CMakeFiles/neuroviz3d.dir/src/network_loader.cpp.obj.d"
   "CMakeFiles/neuroviz3d.dir/src/shader.cpp.obj"
   "CMakeFiles/neuroviz3d.dir/src/shader.cpp.obj.d"
   "libneuroviz3d.dll.a"
