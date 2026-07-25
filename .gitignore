@@ -1,0 +1,11 @@
+# Entorno virtual de Python (trainer)
+trainer/venv/
+trainer/__pycache__/
+*.pyc
+
+# Build del viewer C++ (CMake cache, objetos, exe, copia de trabajo de network.json)
+viewer/build/
+
+# Archivos de sistema / editor
+.vscode/
+*.log

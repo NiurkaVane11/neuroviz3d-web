@@ -2,7 +2,7 @@ import torch
 import json
 from train import IrisNet
 
-def export_weights(model_path="iris_model.pt", out_path="../viewer/build/network.json"):
+def export_weights(model_path="iris_model.pt", out_path="network.json"):
     model = IrisNet()
     model.load_state_dict(torch.load(model_path, map_location="cpu"))
     model.eval()
