@@ -770,6 +770,8 @@ CMakeFiles/neuroviz3d.dir/src/main.cpp.obj: C:/Users/USUARIO/neuroviz3d-web/view
   C:/msys64/mingw64/include/glm/detail/type_vec4.hpp \
   C:/msys64/mingw64/include/glm/detail/type_vec4.inl \
   C:/msys64/mingw64/include/glm/exponential.hpp \
+  C:/msys64/mingw64/include/glm/ext/matrix_clip_space.hpp \
+  C:/msys64/mingw64/include/glm/ext/matrix_clip_space.inl \
   C:/msys64/mingw64/include/glm/ext/matrix_double2x2.hpp \
   C:/msys64/mingw64/include/glm/ext/matrix_double2x2_precision.hpp \
   C:/msys64/mingw64/include/glm/ext/matrix_double2x3.hpp \
@@ -806,6 +808,12 @@ CMakeFiles/neuroviz3d.dir/src/main.cpp.obj: C:/Users/USUARIO/neuroviz3d-web/view
   C:/msys64/mingw64/include/glm/ext/matrix_float4x3_precision.hpp \
   C:/msys64/mingw64/include/glm/ext/matrix_float4x4.hpp \
   C:/msys64/mingw64/include/glm/ext/matrix_float4x4_precision.hpp \
+  C:/msys64/mingw64/include/glm/ext/matrix_projection.hpp \
+  C:/msys64/mingw64/include/glm/ext/matrix_projection.inl \
+  C:/msys64/mingw64/include/glm/ext/matrix_transform.hpp \
+  C:/msys64/mingw64/include/glm/ext/matrix_transform.inl \
+  C:/msys64/mingw64/include/glm/ext/scalar_constants.hpp \
+  C:/msys64/mingw64/include/glm/ext/scalar_constants.inl \
   C:/msys64/mingw64/include/glm/ext/scalar_int_sized.hpp \
   C:/msys64/mingw64/include/glm/ext/scalar_uint_sized.hpp \
   C:/msys64/mingw64/include/glm/ext/vector_bool2.hpp \
@@ -841,6 +849,10 @@ CMakeFiles/neuroviz3d.dir/src/main.cpp.obj: C:/Users/USUARIO/neuroviz3d-web/view
   C:/msys64/mingw64/include/glm/fwd.hpp \
   C:/msys64/mingw64/include/glm/geometric.hpp \
   C:/msys64/mingw64/include/glm/glm.hpp \
+  C:/msys64/mingw64/include/glm/gtc/constants.hpp \
+  C:/msys64/mingw64/include/glm/gtc/constants.inl \
+  C:/msys64/mingw64/include/glm/gtc/matrix_transform.hpp \
+  C:/msys64/mingw64/include/glm/gtc/matrix_transform.inl \
   C:/msys64/mingw64/include/glm/integer.hpp \
   C:/msys64/mingw64/include/glm/mat2x2.hpp \
   C:/msys64/mingw64/include/glm/mat2x3.hpp \
@@ -893,6 +905,8 @@ CMakeFiles/neuroviz3d.dir/src/main.cpp.obj: C:/Users/USUARIO/neuroviz3d-web/view
   C:/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/stddef.h \
   C:/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/stdint.h \
   C:/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/syslimits.h \
+  C:/Users/USUARIO/neuroviz3d-web/viewer/src/camera.h \
+  C:/Users/USUARIO/neuroviz3d-web/viewer/src/mesh.h \
   C:/Users/USUARIO/neuroviz3d-web/viewer/src/shader.h
 
 CMakeFiles/neuroviz3d.dir/src/mesh.cpp.obj: C:/Users/USUARIO/neuroviz3d-web/viewer/src/mesh.cpp \

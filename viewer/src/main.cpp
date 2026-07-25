@@ -4,6 +4,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 #include <vector>
+#include <random>
+#include <cmath>
 #include "shader.h"
 #include "mesh.h"
 #include "camera.h"
@@ -49,13 +51,24 @@ void processInput(GLFWwindow* window) {
         glfwSetWindowShouldClose(window, true);
 }
 
+// Mapea un peso [-1, 1] a un color: cian si es positivo, naranja/rojo si es negativo.
+// La magnitud del peso controla que tan intenso/brillante es el color.
+glm::vec3 weightColor(float w) {
+    float mag = std::min(std::fabs(w), 1.0f);
+    if (w >= 0.0f) {
+        return glm::mix(glm::vec3(0.05f, 0.25f, 0.3f), glm::vec3(0.0f, 0.85f, 0.95f), mag);
+    } else {
+        return glm::mix(glm::vec3(0.35f, 0.15f, 0.1f), glm::vec3(0.95f, 0.35f, 0.25f), mag);
+    }
+}
+
 int main() {
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "NeuroViz3D - Fase 2", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "NeuroViz3D - Fase 3", nullptr, nullptr);
     if (window == nullptr) {
         std::cerr << "ERROR: no se pudo crear la ventana GLFW" << std::endl;
         glfwTerminate();
@@ -73,8 +86,11 @@ int main() {
     }
 
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    Shader shader("shaders/neuron.vert", "shaders/neuron.frag");
+    Shader sphereShader("shaders/sphere.vert", "shaders/sphere.frag");
+    Shader lineShader("shaders/line.vert", "shaders/line.frag");
 
     std::vector<int> layerSizes = {4, 8, 6, 3};
 
@@ -92,18 +108,28 @@ int main() {
         }
     }
 
+    // Pesos simulados por conexion (Fase 4 los reemplaza con pesos reales de PyTorch)
+    std::mt19937 rng(42);
+    std::uniform_real_distribution<float> weightDist(-1.0f, 1.0f);
+
     std::vector<float> lineVerts;
     for (size_t l = 0; l + 1 < positions.size(); ++l) {
         for (auto& p0 : positions[l]) {
             for (auto& p1 : positions[l + 1]) {
+                float w = weightDist(rng);
+                glm::vec3 c = weightColor(w);
                 lineVerts.push_back(p0.x); lineVerts.push_back(p0.y); lineVerts.push_back(p0.z);
+                lineVerts.push_back(c.r); lineVerts.push_back(c.g); lineVerts.push_back(c.b);
                 lineVerts.push_back(p1.x); lineVerts.push_back(p1.y); lineVerts.push_back(p1.z);
+                lineVerts.push_back(c.r); lineVerts.push_back(c.g); lineVerts.push_back(c.b);
             }
         }
     }
 
     SphereMesh sphere(0.22f, 24, 16);
     LineMesh lines(lineVerts);
+
+    glm::vec3 lightPos(4.0f, 6.0f, 8.0f);
 
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
@@ -114,18 +140,25 @@ int main() {
         glm::mat4 projection = glm::perspective(glm::radians(45.0f),
             (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = camera.getViewMatrix();
+        glm::vec3 viewPos = camera.getPosition();
 
-        shader.use();
-
-        shader.setMat4("uMVP", projection * view);
-        shader.setVec3("uColor", glm::vec3(0.0f, 0.55f, 0.65f));
+        // Conexiones
+        lineShader.use();
+        lineShader.setMat4("uMVP", projection * view);
         lines.draw();
 
-        shader.setVec3("uColor", glm::vec3(0.85f, 0.85f, 0.88f));
+        // Neuronas con iluminacion Phong
+        sphereShader.use();
+        sphereShader.setMat4("uView", view);
+        sphereShader.setMat4("uProjection", projection);
+        sphereShader.setVec3("uLightPos", lightPos);
+        sphereShader.setVec3("uViewPos", viewPos);
+        sphereShader.setVec3("uColor", glm::vec3(0.85f, 0.85f, 0.88f));
+
         for (auto& layer : positions) {
             for (auto& pos : layer) {
                 glm::mat4 model = glm::translate(glm::mat4(1.0f), pos);
-                shader.setMat4("uMVP", projection * view * model);
+                sphereShader.setMat4("uModel", model);
                 sphere.draw();
             }
         }

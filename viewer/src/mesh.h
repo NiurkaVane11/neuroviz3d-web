@@ -12,9 +12,10 @@ private:
     unsigned int indexCount;
 };
 
+// Cada vertice: posicion (3 floats) + color (3 floats)
 class LineMesh {
 public:
-    explicit LineMesh(const std::vector<float>& pointsXYZ);
+    explicit LineMesh(const std::vector<float>& posColorData);
     void draw() const;
 
 private:

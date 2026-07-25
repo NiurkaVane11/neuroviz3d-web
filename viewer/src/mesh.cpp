@@ -1,7 +1,7 @@
 #include "mesh.h"
 #include <cmath>
 
-// --- Generacion de una esfera UV: capas horizontales (stacks) x divisiones angulares (sectors) ---
+// --- Esfera UV con normales (normal = posicion normalizada, ya que esta centrada en el origen) ---
 static void generateSphereData(float radius, int sectorCount, int stackCount,
                                 std::vector<float>& vertices, std::vector<unsigned int>& indices) {
     const float PI = 3.14159265359f;
@@ -17,9 +17,15 @@ static void generateSphereData(float radius, int sectorCount, int stackCount,
             float sectorAngle = j * sectorStep;
             float x = xy * cosf(sectorAngle);
             float y = xy * sinf(sectorAngle);
+
             vertices.push_back(x);
             vertices.push_back(y);
             vertices.push_back(z);
+
+            float nx = x / radius, ny = y / radius, nz = z / radius;
+            vertices.push_back(nx);
+            vertices.push_back(ny);
+            vertices.push_back(nz);
         }
     }
 
@@ -60,8 +66,12 @@ SphereMesh::SphereMesh(float radius, int sectors, int stacks) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    // posicion
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+    // normal
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 }
 
 void SphereMesh::draw() const {
@@ -69,18 +79,22 @@ void SphereMesh::draw() const {
     glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
 }
 
-LineMesh::LineMesh(const std::vector<float>& pointsXYZ) {
-    vertexCount = static_cast<unsigned int>(pointsXYZ.size() / 3);
+LineMesh::LineMesh(const std::vector<float>& posColorData) {
+    vertexCount = static_cast<unsigned int>(posColorData.size() / 6);
 
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
 
     glBindVertexArray(VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, pointsXYZ.size() * sizeof(float), pointsXYZ.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, posColorData.size() * sizeof(float), posColorData.data(), GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    // posicion
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+    // color
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 }
 
 void LineMesh::draw() const {
