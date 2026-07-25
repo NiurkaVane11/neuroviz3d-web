@@ -10,6 +10,8 @@ find_package(glm REQUIRED)
 add_executable(neuroviz3d
     src/main.cpp
     src/shader.cpp
+    src/mesh.cpp
+    src/camera.cpp
     external/glad/src/glad.c
 )
 

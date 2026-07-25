@@ -1,8 +1,12 @@
 file(REMOVE_RECURSE
   "CMakeFiles/neuroviz3d.dir/external/glad/src/glad.c.obj"
   "CMakeFiles/neuroviz3d.dir/external/glad/src/glad.c.obj.d"
+  "CMakeFiles/neuroviz3d.dir/src/camera.cpp.obj"
+  "CMakeFiles/neuroviz3d.dir/src/camera.cpp.obj.d"
   "CMakeFiles/neuroviz3d.dir/src/main.cpp.obj"
   "CMakeFiles/neuroviz3d.dir/src/main.cpp.obj.d"
+  "CMakeFiles/neuroviz3d.dir/src/mesh.cpp.obj"
+  "CMakeFiles/neuroviz3d.dir/src/mesh.cpp.obj.d"
   "CMakeFiles/neuroviz3d.dir/src/shader.cpp.obj"
   "CMakeFiles/neuroviz3d.dir/src/shader.cpp.obj.d"
   "libneuroviz3d.dll.a"
