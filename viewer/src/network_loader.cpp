@@ -171,3 +171,74 @@ NetworkArchitecture loadNetworkFromJSON(const std::string& path) {
 
     return arch;
 }
+
+ActivationSet loadActivationsFromJSON(const std::string& path) {
+    ActivationSet set;
+
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        std::cerr << "[network_loader] No se pudo abrir: " << path << std::endl;
+        return set;
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    std::string content = buffer.str();
+
+    try {
+        JsonParser p(content);
+        p.expect('{');
+
+        while (true) {
+            std::string key = p.parseKey();
+
+            if (key == "samples") {
+                p.skipWhitespace();
+                p.expect('[');
+                p.skipWhitespace();
+                if (!p.match(']')) {
+                    while (true) {
+                        ActivationSample sample;
+                        p.expect('{');
+                        while (true) {
+                            std::string skey = p.parseKey();
+                            if (skey == "input") {
+                                sample.input = p.parseFloatArray();
+                            } else if (skey == "true_label") {
+                                sample.true_label = (int)p.parseNumber();
+                            } else if (skey == "predicted_label") {
+                                sample.predicted_label = (int)p.parseNumber();
+                            } else if (skey == "activations") {
+                                sample.activations = p.parseFloatMatrix();
+                            }
+                            p.skipWhitespace();
+                            if (p.match(',')) continue;
+                            p.expect('}');
+                            break;
+                        }
+                        set.samples.push_back(sample);
+                        p.skipWhitespace();
+                        if (p.match(',')) continue;
+                        p.expect(']');
+                        break;
+                    }
+                }
+            }
+
+            p.skipWhitespace();
+            if (p.match(',')) continue;
+            p.expect('}');
+            break;
+        }
+
+        set.valid = true;
+        std::cout << "[network_loader] Cargados " << set.samples.size()
+                  << " samples de activaciones desde " << path << std::endl;
+
+    } catch (const std::exception& e) {
+        std::cerr << "[network_loader] Error parseando activations: " << e.what() << std::endl;
+        set.valid = false;
+    }
+
+    return set;
+}

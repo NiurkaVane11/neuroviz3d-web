@@ -16,4 +16,17 @@ struct NetworkArchitecture {
     bool valid = false;
 };
 
+struct ActivationSample {
+    std::vector<float> input;
+    int true_label = -1;
+    int predicted_label = -1;
+    std::vector<std::vector<float>> activations; // [layer][neuron]
+};
+
+struct ActivationSet {
+    std::vector<ActivationSample> samples;
+    bool valid = false;
+};
+
 NetworkArchitecture loadNetworkFromJSON(const std::string& path);
+ActivationSet loadActivationsFromJSON(const std::string& path);

@@ -19,6 +19,14 @@ OrbitCamera camera(glm::vec3(0.0f), 12.0f);
 bool dragging = false;
 double lastX = 0.0, lastY = 0.0;
 
+// --- Estado de la animacion del forward pass ---
+bool spacePressedLastFrame = false;
+bool animating = false;
+double animStartTime = 0.0;
+int activeSampleIdx = -1;
+
+const float SEGMENT_DURATION = 0.8f; // segundos por transicion de capa a capa
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
@@ -54,7 +62,6 @@ void processInput(GLFWwindow* window) {
 }
 
 // Mapea un peso [-1, 1] a un color: cian si es positivo, naranja/rojo si es negativo.
-// La magnitud del peso controla que tan intenso/brillante es el color.
 glm::vec3 weightColor(float w) {
     float mag = std::min(std::fabs(w), 1.0f);
     if (w >= 0.0f) {
@@ -64,13 +71,27 @@ glm::vec3 weightColor(float w) {
     }
 }
 
+// Normaliza una activacion dentro de su propia capa a [0,1] usando el maximo absoluto de esa capa
+float normalizeActivation(float value, const std::vector<float>& layerActivations) {
+    float maxAbs = 0.0001f;
+    for (float v : layerActivations) maxAbs = std::max(maxAbs, std::fabs(v));
+    return std::clamp(std::fabs(value) / maxAbs, 0.0f, 1.0f);
+}
+
+// Color emisivo calido (dorado/blanco) segun intensidad de activacion normalizada [0,1]
+glm::vec3 emissiveColor(float intensity) {
+    glm::vec3 low(0.0f, 0.0f, 0.0f);
+    glm::vec3 high(1.4f, 1.1f, 0.5f); // por encima de 1.0 a proposito, el shader hace soft-clamp
+    return glm::mix(low, high, intensity);
+}
+
 int main() {
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "NeuroViz3D - Fase 4", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "NeuroViz3D - Fase 5", nullptr, nullptr);
     if (window == nullptr) {
         std::cerr << "ERROR: no se pudo crear la ventana GLFW" << std::endl;
         glfwTerminate();
@@ -110,7 +131,7 @@ int main() {
         }
     }
 
-    // Fase 4: intenta cargar pesos reales de PyTorch; si no existe o no coincide, cae a random (seed 42)
+    // Fase 4: pesos reales de PyTorch, con fallback a random (seed 42)
     NetworkArchitecture net = loadNetworkFromJSON("network.json");
     bool useRealWeights = net.valid && net.layers.size() == positions.size() - 1;
 
@@ -124,11 +145,26 @@ int main() {
         std::cout << "[main] network.json no disponible; usando pesos random (fallback, seed 42)" << std::endl;
     }
 
+    // Fase 5: activaciones reales para animar el forward pass (SPACE)
+    ActivationSet activations = loadActivationsFromJSON("activations.json");
+    if (activations.valid && !activations.samples.empty()) {
+        std::cout << "[main] " << activations.samples.size()
+                  << " samples de activaciones listos (presiona SPACE para animar)" << std::endl;
+    } else {
+        std::cout << "[main] activations.json no disponible; SPACE no hara nada" << std::endl;
+    }
+
     std::mt19937 rng(42);
     std::uniform_real_distribution<float> weightDist(-1.0f, 1.0f);
+    std::uniform_int_distribution<int> sampleDist(0, activations.valid && !activations.samples.empty()
+        ? (int)activations.samples.size() - 1 : 0);
+
+    // Guardamos, por conexion, el peso real (o random) para reutilizarlo en la animacion
+    std::vector<std::vector<std::vector<float>>> connWeights(positions.size() - 1);
 
     std::vector<float> lineVerts;
     for (size_t l = 0; l + 1 < positions.size(); ++l) {
+        connWeights[l].resize(positions[l].size(), std::vector<float>(positions[l + 1].size(), 0.0f));
         for (size_t i0 = 0; i0 < positions[l].size(); ++i0) {
             for (size_t i1 = 0; i1 < positions[l + 1].size(); ++i1) {
                 glm::vec3 p0 = positions[l][i0];
@@ -136,12 +172,12 @@ int main() {
 
                 float w;
                 if (useRealWeights) {
-                    // weights[out][in] -> out = neurona destino (i1), in = neurona origen (i0)
                     w = net.layers[l].weights[i1][i0];
                     w = std::max(-1.0f, std::min(1.0f, w));
                 } else {
                     w = weightDist(rng);
                 }
+                connWeights[l][i0][i1] = w;
 
                 glm::vec3 c = weightColor(w);
                 lineVerts.push_back(p0.x); lineVerts.push_back(p0.y); lineVerts.push_back(p0.z);
@@ -154,11 +190,34 @@ int main() {
 
     SphereMesh sphere(0.22f, 24, 16);
     LineMesh lines(lineVerts);
+    // Mesh auxiliar pequeña para dibujar el "pulso" viajero como una mini-esfera brillante
+    SphereMesh pulseSphere(0.09f, 16, 10);
 
     glm::vec3 lightPos(4.0f, 6.0f, 8.0f);
 
+    size_t numLayerGaps = positions.size() - 1; // 3 transiciones para {4,8,6,3}
+
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
+
+        // --- Manejo de tecla SPACE: dispara un nuevo forward pass animado ---
+        bool spacePressed = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
+        if (spacePressed && !spacePressedLastFrame && activations.valid && !activations.samples.empty()) {
+            activeSampleIdx = sampleDist(rng);
+            animating = true;
+            animStartTime = glfwGetTime();
+            const auto& s = activations.samples[activeSampleIdx];
+            std::cout << "[forward pass] sample #" << activeSampleIdx
+                      << " | label real=" << s.true_label
+                      << " | prediccion=" << s.predicted_label << std::endl;
+        }
+        spacePressedLastFrame = spacePressed;
+
+        double elapsed = animating ? (glfwGetTime() - animStartTime) : 0.0;
+        float totalDuration = SEGMENT_DURATION * (float)numLayerGaps;
+        if (animating && elapsed > totalDuration + 0.3) {
+            // deja el resultado final iluminado un instante y luego se apaga
+        }
 
         glClearColor(0.04f, 0.04f, 0.06f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -168,24 +227,85 @@ int main() {
         glm::mat4 view = camera.getViewMatrix();
         glm::vec3 viewPos = camera.getPosition();
 
-        // Conexiones
+        // Conexiones (color base por peso, sin cambios)
         lineShader.use();
         lineShader.setMat4("uMVP", projection * view);
         lines.draw();
 
-        // Neuronas con iluminacion Phong
+        // --- Calcular emision por neurona segun estado de la animacion ---
+        // layerReached[l] = true si el pulso ya llego (o paso) por esa capa
+        std::vector<bool> layerReached(positions.size(), false);
+        layerReached[0] = animating; // la capa de entrada "brilla" desde el inicio si hay animacion activa
+
+        int activeGap = -1;      // que transicion l->l+1 esta en curso
+        float gapProgress = 0.0f; // 0..1 dentro de esa transicion
+
+        if (animating && activations.valid && activeSampleIdx >= 0) {
+            for (size_t gap = 0; gap < numLayerGaps; ++gap) {
+                double gapStart = gap * SEGMENT_DURATION;
+                double gapEnd = gapStart + SEGMENT_DURATION;
+                if (elapsed >= gapEnd) {
+                    layerReached[gap + 1] = true;
+                } else if (elapsed >= gapStart) {
+                    activeGap = (int)gap;
+                    gapProgress = (float)((elapsed - gapStart) / SEGMENT_DURATION);
+                    break;
+                }
+            }
+            if (elapsed >= totalDuration) {
+                layerReached[numLayerGaps] = true; // capa de salida totalmente iluminada
+            }
+            if (elapsed > totalDuration + 1.5) {
+                animating = false; // apaga la animacion tras un momento mostrando el resultado
+            }
+        }
+
+        // Neuronas con iluminacion Phong + emision segun activacion real
         sphereShader.use();
         sphereShader.setMat4("uView", view);
         sphereShader.setMat4("uProjection", projection);
         sphereShader.setVec3("uLightPos", lightPos);
         sphereShader.setVec3("uViewPos", viewPos);
-        sphereShader.setVec3("uColor", glm::vec3(0.85f, 0.85f, 0.88f));
 
-        for (auto& layer : positions) {
-            for (auto& pos : layer) {
-                glm::mat4 model = glm::translate(glm::mat4(1.0f), pos);
+        const ActivationSample* activeSample = (activations.valid && activeSampleIdx >= 0)
+            ? &activations.samples[activeSampleIdx] : nullptr;
+
+        for (size_t l = 0; l < positions.size(); ++l) {
+            for (size_t i = 0; i < positions[l].size(); ++i) {
+                glm::mat4 model = glm::translate(glm::mat4(1.0f), positions[l][i]);
                 sphereShader.setMat4("uModel", model);
+                sphereShader.setVec3("uColor", glm::vec3(0.85f, 0.85f, 0.88f));
+
+                glm::vec3 emissive(0.0f);
+                if (activeSample && layerReached[l] && l < activeSample->activations.size()) {
+                    float val = activeSample->activations[l][i];
+                    float intensity = normalizeActivation(val, activeSample->activations[l]);
+                    emissive = emissiveColor(intensity);
+                }
+                sphereShader.setVec3("uEmissive", emissive);
                 sphere.draw();
+            }
+        }
+
+        // --- Dibujar el pulso viajero sobre la transicion activa ---
+        if (activeGap >= 0 && activeSample) {
+            size_t l = (size_t)activeGap;
+            for (size_t i0 = 0; i0 < positions[l].size(); ++i0) {
+                for (size_t i1 = 0; i1 < positions[l + 1].size(); ++i1) {
+                    glm::vec3 p0 = positions[l][i0];
+                    glm::vec3 p1 = positions[l + 1][i1];
+                    glm::vec3 pulsePos = glm::mix(p0, p1, gapProgress);
+
+                    float srcVal = (l < activeSample->activations.size())
+                        ? activeSample->activations[l][i0] : 0.0f;
+                    float intensity = normalizeActivation(srcVal, activeSample->activations[l]);
+
+                    glm::mat4 model = glm::translate(glm::mat4(1.0f), pulsePos);
+                    sphereShader.setMat4("uModel", model);
+                    sphereShader.setVec3("uColor", glm::vec3(0.0f));
+                    sphereShader.setVec3("uEmissive", emissiveColor(std::max(intensity, 0.5f)));
+                    pulseSphere.draw();
+                }
             }
         }
 
