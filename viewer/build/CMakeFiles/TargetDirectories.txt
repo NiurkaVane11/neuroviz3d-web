@@ -1,0 +1,3 @@
+C:/Users/USUARIO/neuroviz3d-web/viewer/build/CMakeFiles/neuroviz3d.dir
+C:/Users/USUARIO/neuroviz3d-web/viewer/build/CMakeFiles/edit_cache.dir
+C:/Users/USUARIO/neuroviz3d-web/viewer/build/CMakeFiles/rebuild_cache.dir
