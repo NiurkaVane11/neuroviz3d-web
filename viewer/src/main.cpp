@@ -18,6 +18,13 @@ const unsigned int SCR_HEIGHT = 700;
 
 OrbitCamera camera(glm::vec3(0.0f), 12.0f);
 bool dragging = false;
+enum class CameraMode { ORBIT, FREE };
+CameraMode currentCameraMode = CameraMode::ORBIT;
+FreeCamera freeCam(glm::vec3(0.0f, 0.0f, 12.0f));
+bool cPressedLastFrame = false;
+double lastFrameTime = 0.0;
+bool firstMouseFree = true;
+double freeLastX = 0.0, freeLastY = 0.0;
 double lastX = 0.0, lastY = 0.0;
 
 bool spacePressedLastFrame = false;
@@ -62,10 +69,22 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         } else if (action == GLFW_RELEASE) {
             dragging = false;
         }
-    }
 }
-
+    }
 void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos) {
+    if (currentCameraMode == CameraMode::FREE) {
+        if (firstMouseFree) {
+            freeLastX = xpos;
+            freeLastY = ypos;
+            firstMouseFree = false;
+        }
+        float dx = static_cast<float>(xpos - freeLastX);
+        float dy = static_cast<float>(freeLastY - ypos);
+        freeLastX = xpos;
+        freeLastY = ypos;
+        freeCam.processMouseMovement(dx, dy);
+        return;
+    }
     if (dragging) {
         float dx = static_cast<float>(xpos - lastX);
         float dy = static_cast<float>(ypos - lastY);
@@ -282,6 +301,9 @@ int main() {
     size_t numLayerGaps = positions.size() - 1;
 
     while (!glfwWindowShouldClose(window)) {
+        double currentFrameTime = glfwGetTime();
+        float deltaTime = static_cast<float>(currentFrameTime - lastFrameTime);
+        lastFrameTime = currentFrameTime;
         processInput(window);
 
         bool spacePressed = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
@@ -322,6 +344,28 @@ int main() {
             projectionTransitionStart = glfwGetTime();
         }
         pPressedLastFrame = pPressed;
+        bool cPressed = glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS;
+        if (cPressed && !cPressedLastFrame) {
+            if (currentCameraMode == CameraMode::ORBIT) {
+                currentCameraMode = CameraMode::FREE;
+                freeCam = FreeCamera(camera.getPosition());
+                freeCam.lookAt(glm::vec3(0.0f));
+                firstMouseFree = true;
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            } else {
+                currentCameraMode = CameraMode::ORBIT;
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            }
+        }
+        cPressedLastFrame = cPressed;
+        if (currentCameraMode == CameraMode::FREE) {
+            if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) freeCam.processKeyboard(0, deltaTime);
+            if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) freeCam.processKeyboard(1, deltaTime);
+            if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) freeCam.processKeyboard(2, deltaTime);
+            if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) freeCam.processKeyboard(3, deltaTime);
+            if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) freeCam.processKeyboard(4, deltaTime);
+            if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) freeCam.processKeyboard(5, deltaTime);
+        }
 
         if (projectionTransitioning) {
             double transitionElapsed = glfwGetTime() - projectionTransitionStart;
@@ -338,8 +382,8 @@ int main() {
 
         glm::mat4 projection = glm::perspective(glm::radians(45.0f),
             (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        glm::mat4 view = camera.getViewMatrix();
-        glm::vec3 viewPos = camera.getPosition();
+        glm::mat4 view = (currentCameraMode == CameraMode::FREE) ? freeCam.getViewMatrix() : camera.getViewMatrix();
+        glm::vec3 viewPos = (currentCameraMode == CameraMode::FREE) ? freeCam.getPosition() : camera.getPosition();
 
         lineShader.use();
         lineShader.setMat4("uMVP", projection * view);
