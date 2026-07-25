@@ -1,7 +1,7 @@
 #include "mesh.h"
 #include <cmath>
+#include <algorithm>
 
-// --- Esfera UV con normales (normal = posicion normalizada, ya que esta centrada en el origen) ---
 static void generateSphereData(float radius, int sectorCount, int stackCount,
                                 std::vector<float>& vertices, std::vector<unsigned int>& indices) {
     const float PI = 3.14159265359f;
@@ -66,10 +66,8 @@ SphereMesh::SphereMesh(float radius, int sectors, int stacks) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
 
-    // posicion
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    // normal
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 }
@@ -79,7 +77,7 @@ void SphereMesh::draw() const {
     glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
 }
 
-LineMesh::LineMesh(const std::vector<float>& posColorData) {
+LineMesh::LineMesh(const std::vector<float>& posColorData, bool dynamic) : isDynamic(dynamic) {
     vertexCount = static_cast<unsigned int>(posColorData.size() / 6);
 
     glGenVertexArrays(1, &VAO);
@@ -87,12 +85,11 @@ LineMesh::LineMesh(const std::vector<float>& posColorData) {
 
     glBindVertexArray(VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, posColorData.size() * sizeof(float), posColorData.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, posColorData.size() * sizeof(float), posColorData.data(),
+                 dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
 
-    // posicion
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    // color
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 }
@@ -100,4 +97,15 @@ LineMesh::LineMesh(const std::vector<float>& posColorData) {
 void LineMesh::draw() const {
     glBindVertexArray(VAO);
     glDrawArrays(GL_LINES, 0, vertexCount);
+}
+
+void LineMesh::draw(unsigned int count) const {
+    glBindVertexArray(VAO);
+    glDrawArrays(GL_LINE_STRIP, 0, std::min(count, vertexCount));
+}
+
+void LineMesh::updateVertices(const std::vector<float>& posColorData) {
+    vertexCount = static_cast<unsigned int>(posColorData.size() / 6);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, posColorData.size() * sizeof(float), posColorData.data(), GL_DYNAMIC_DRAW);
 }

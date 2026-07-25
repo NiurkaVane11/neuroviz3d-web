@@ -242,3 +242,49 @@ ActivationSet loadActivationsFromJSON(const std::string& path) {
 
     return set;
 }
+
+TrainingHistory loadTrainingHistoryFromJSON(const std::string& path) {
+    TrainingHistory hist;
+
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        std::cerr << "[network_loader] No se pudo abrir: " << path << std::endl;
+        return hist;
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    std::string content = buffer.str();
+
+    try {
+        JsonParser p(content);
+        p.expect('{');
+
+        while (true) {
+            std::string key = p.parseKey();
+
+            if (key == "epochs") {
+                hist.epochs = p.parseIntArray();
+            } else if (key == "train_loss") {
+                hist.train_loss = p.parseFloatArray();
+            } else if (key == "test_accuracy") {
+                hist.test_accuracy = p.parseFloatArray();
+            }
+
+            p.skipWhitespace();
+            if (p.match(',')) continue;
+            p.expect('}');
+            break;
+        }
+
+        hist.valid = true;
+        std::cout << "[network_loader] Historial de entrenamiento cargado: " << hist.epochs.size()
+                  << " epocas desde " << path << std::endl;
+
+    } catch (const std::exception& e) {
+        std::cerr << "[network_loader] Error parseando training history: " << e.what() << std::endl;
+        hist.valid = false;
+    }
+
+    return hist;
+}
