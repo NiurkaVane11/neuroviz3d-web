@@ -528,6 +528,9 @@ int main() {
                     if (l == 0) intensity = INPUT_MIN_GLOW + intensity * (1.0f - INPUT_MIN_GLOW);
                     emissive = emissiveColor(intensity);
                 }
+                if ((int)l == selectedLayer && (int)i == selectedNeuron) {
+                    emissive += glm::vec3(1.0f, 0.3f, 0.6f) * 0.8f;
+                }
                 sphereShader.setVec3("uEmissive", emissive);
                 sphere.draw();
             }
