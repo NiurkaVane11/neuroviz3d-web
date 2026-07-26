@@ -25,6 +25,10 @@ bool cPressedLastFrame = false;
 double lastFrameTime = 0.0;
 bool firstMouseFree = true;
 double freeLastX = 0.0, freeLastY = 0.0;
+bool rightClickRequested = false;
+double clickX = 0.0, clickY = 0.0;
+int selectedLayer = -1;
+int selectedNeuron = -1;
 double lastX = 0.0, lastY = 0.0;
 
 bool spacePressedLastFrame = false;
@@ -70,6 +74,10 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
             dragging = false;
         }
 }
+    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS && currentCameraMode == CameraMode::ORBIT) {
+        rightClickRequested = true;
+        glfwGetCursorPos(window, &clickX, &clickY);
+    }
     }
 void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos) {
     if (currentCameraMode == CameraMode::FREE) {
@@ -160,6 +168,34 @@ std::vector<float> buildGraphCurve(const std::vector<float>& values, float minV,
         verts.push_back(color.r); verts.push_back(color.g); verts.push_back(color.b);
     }
     return verts;
+    }
+
+// Convierte una posicion de pantalla (pixeles) a un rayo 3D en espacio de mundo, usando
+// la matriz inversa de view*projection. Devuelve origen y direccion normalizada del rayo.
+void screenPosToRay(double mouseX, double mouseY, const glm::mat4& view, const glm::mat4& projection,
+                     int fbWidth, int fbHeight, glm::vec3& outOrigin, glm::vec3& outDir) {
+    float ndcX = (2.0f * (float)mouseX) / (float)fbWidth - 1.0f;
+    float ndcY = 1.0f - (2.0f * (float)mouseY) / (float)fbHeight;
+    glm::mat4 invVP = glm::inverse(projection * view);
+    glm::vec4 nearPoint = invVP * glm::vec4(ndcX, ndcY, -1.0f, 1.0f);
+    glm::vec4 farPoint = invVP * glm::vec4(ndcX, ndcY, 1.0f, 1.0f);
+    nearPoint /= nearPoint.w;
+    farPoint /= farPoint.w;
+    outOrigin = glm::vec3(nearPoint);
+    outDir = glm::normalize(glm::vec3(farPoint) - glm::vec3(nearPoint));
+}
+// Test de interseccion rayo-esfera. Devuelve true si hay interseccion, y la distancia en outT.
+bool raySphereIntersect(glm::vec3 rayOrigin, glm::vec3 rayDir, glm::vec3 sphereCenter, float radius, float& outT) {
+    glm::vec3 oc = rayOrigin - sphereCenter;
+    float a = glm::dot(rayDir, rayDir);
+    float b = 2.0f * glm::dot(oc, rayDir);
+    float c = glm::dot(oc, oc) - radius * radius;
+    float discriminant = b * b - 4.0f * a * c;
+    if (discriminant < 0.0f) return false;
+    float t = (-b - sqrtf(discriminant)) / (2.0f * a);
+    if (t < 0.0f) return false;
+    outT = t;
+    return true;
 }
 
 int main() {
@@ -384,6 +420,41 @@ int main() {
             (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = (currentCameraMode == CameraMode::FREE) ? freeCam.getViewMatrix() : camera.getViewMatrix();
         glm::vec3 viewPos = (currentCameraMode == CameraMode::FREE) ? freeCam.getPosition() : camera.getPosition();
+        if (rightClickRequested && currentCameraMode == CameraMode::ORBIT) {
+            glm::vec3 rayOrigin, rayDir;
+            int fbWidth, fbHeight; glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
+            screenPosToRay(clickX, clickY, view, projection, fbWidth, fbHeight, rayOrigin, rayDir);
+            int bestLayer = -1, bestNeuron = -1;
+            float bestT = 1e9f;
+            for (size_t l = 0; l < positions.size(); ++l) {
+                for (size_t i = 0; i < positions[l].size(); ++i) {
+                    float t;
+                    if (raySphereIntersect(rayOrigin, rayDir, positions[l][i], 0.22f, t)) {
+                        if (t < bestT) {
+                            bestT = t;
+                            bestLayer = (int)l;
+                            bestNeuron = (int)i;
+                        }
+                    }
+                }
+            }
+            selectedLayer = bestLayer;
+            selectedNeuron = bestNeuron;
+            if (selectedLayer >= 0) {
+                std::cout << "[picking] capa=" << selectedLayer << " neurona=" << selectedNeuron;
+                if (activations.valid && activeSampleIdx >= 0) {
+                    const auto& s = activations.samples[activeSampleIdx];
+                    if ((size_t)selectedLayer < s.activations.size() &&
+                        (size_t)selectedNeuron < s.activations[selectedLayer].size()) {
+                        std::cout << " activacion=" << s.activations[selectedLayer][selectedNeuron];
+                    }
+                }
+                std::cout << std::endl;
+            } else {
+                std::cout << "[picking] sin seleccion (click no impacto ninguna neurona)" << std::endl;
+            }
+            rightClickRequested = false;
+        }
 
         lineShader.use();
         lineShader.setMat4("uMVP", projection * view);
