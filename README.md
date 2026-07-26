@@ -25,4 +25,4 @@ Visualizador 3D de redes neuronales en OpenGL, con entrenamiento real en PyTorch
 - Panel ImGui (arriba a la izquierda): info general (FPS, sample activo, entrenamiento), datos de la neurona seleccionada, botones para alternar modo y camara, sliders de velocidad/sensibilidad de camara libre
 - ESC: salir
 ## Demo
-![demo](\neuro3D.png)
+![demo](neuro3D.png)
