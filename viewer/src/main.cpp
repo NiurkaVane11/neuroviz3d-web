@@ -1,5 +1,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
@@ -225,6 +228,12 @@ int main() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
+
     Shader sphereShader("shaders/sphere.vert", "shaders/sphere.frag");
     Shader lineShader("shaders/line.vert", "shaders/line.frag");
 
@@ -339,6 +348,8 @@ int main() {
     while (!glfwWindowShouldClose(window)) {
         double currentFrameTime = glfwGetTime();
         float deltaTime = static_cast<float>(currentFrameTime - lastFrameTime);
+        static float freeSpeed = freeCam.getSpeed();
+        static float freeSensitivity = freeCam.getSensitivity();
         lastFrameTime = currentFrameTime;
         processInput(window);
 
@@ -386,6 +397,8 @@ int main() {
                 currentCameraMode = CameraMode::FREE;
                 freeCam = FreeCamera(camera.getPosition());
                 freeCam.lookAt(glm::vec3(0.0f));
+                freeSpeed = freeCam.getSpeed();
+                freeSensitivity = freeCam.getSensitivity();
                 firstMouseFree = true;
                 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             } else {
@@ -586,10 +599,77 @@ int main() {
             glEnable(GL_DEPTH_TEST);
         }
 
+
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
+        ImGui::Begin("NeuroViz3D - Panel");
+        ImGui::Text("FPS: %.1f", deltaTime > 0.0f ? 1.0f / deltaTime : 0.0f);
+        if (activeSampleIdx >= 0) {
+            ImGui::Text("Sample activo: #%d", activeSampleIdx);
+        } else {
+            ImGui::Text("Sample activo: ninguno");
+        }
+        if (trainingAnimating) {
+            double tElapsedPanel = glfwGetTime() - trainingAnimStartTime;
+            float progressPanel = std::clamp((float)(tElapsedPanel / TRAINING_ANIM_DURATION), 0.0f, 1.0f);
+            size_t estEpoch = std::max((size_t)2, (size_t)(progressPanel * history.epochs.size()));
+            ImGui::Text("Entrenamiento: epoca %zu / %zu", estEpoch, history.epochs.size());
+        } else {
+            ImGui::Text("Entrenamiento: no reproduciendo");
+        }
+        ImGui::Separator();
+        if (selectedLayer >= 0) {
+            ImGui::Text("Neurona seleccionada: capa %d, indice %d", selectedLayer, selectedNeuron);
+            if (activations.valid && activeSampleIdx >= 0) {
+                const auto& sPanel = activations.samples[activeSampleIdx];
+                if ((size_t)selectedLayer < sPanel.activations.size() &&
+                    (size_t)selectedNeuron < sPanel.activations[selectedLayer].size()) {
+                    ImGui::Text("Activacion: %.4f", sPanel.activations[selectedLayer][selectedNeuron]);
+                }
+            }
+        } else {
+            ImGui::Text("Neurona seleccionada: ninguna");
+        }
+        ImGui::Separator();
+        if (ImGui::Button(currentMode == ViewMode::NETWORK ? "Modo: RED (click = EMBEDDING)" : "Modo: EMBEDDING (click = RED)")) {
+            if (embeddings.valid) {
+                currentMode = (currentMode == ViewMode::NETWORK) ? ViewMode::EMBEDDING : ViewMode::NETWORK;
+                updateWindowTitle(window, nullptr);
+            }
+        }
+        if (ImGui::Button(currentCameraMode == CameraMode::ORBIT ? "Camara: ORBITAL (click = LIBRE)" : "Camara: LIBRE (click = ORBITAL)")) {
+            if (currentCameraMode == CameraMode::ORBIT) {
+                currentCameraMode = CameraMode::FREE;
+                freeCam = FreeCamera(camera.getPosition());
+                freeCam.lookAt(glm::vec3(0.0f));
+                freeSpeed = freeCam.getSpeed();
+                freeSensitivity = freeCam.getSensitivity();
+                firstMouseFree = true;
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            } else {
+                currentCameraMode = CameraMode::ORBIT;
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            }
+        }
+        ImGui::Separator();
+        if (ImGui::SliderFloat("Velocidad camara libre", &freeSpeed, 1.0f, 20.0f)) {
+            freeCam.setSpeed(freeSpeed);
+        }
+        if (ImGui::SliderFloat("Sensibilidad camara libre", &freeSensitivity, 0.02f, 0.5f)) {
+            freeCam.setSensitivity(freeSensitivity);
+        }
+        ImGui::End();
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
     glfwTerminate();
     return 0;
 }

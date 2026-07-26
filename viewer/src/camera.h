@@ -24,6 +24,10 @@ public:
     void processMouseMovement(float dx, float dy);
     void processKeyboard(int direction, float deltaTime); // 0=forward,1=back,2=left,3=right,4=up,5=down
     void lookAt(glm::vec3 target);
+    void setSpeed(float s) { speed = s; }
+    void setSensitivity(float s) { sensitivity = s; }
+    float getSpeed() const { return speed; }
+    float getSensitivity() const { return sensitivity; }
 private:
     glm::vec3 position;
     glm::vec3 front;

@@ -11,10 +11,18 @@ add_executable(neuroviz3d
     src/camera.cpp
     src/network_loader.cpp
     external/glad/src/glad.c
+    external/imgui/imgui.cpp
+    external/imgui/imgui_demo.cpp
+    external/imgui/imgui_draw.cpp
+    external/imgui/imgui_tables.cpp
+    external/imgui/imgui_widgets.cpp
+    external/imgui/imgui_impl_glfw.cpp
+    external/imgui/imgui_impl_opengl3.cpp
 )
 target_include_directories(neuroviz3d PRIVATE
     src
     external/glad/include
+    external/imgui
 )
 target_link_libraries(neuroviz3d PRIVATE glfw glm::glm opengl32)
 if(WIN32)
