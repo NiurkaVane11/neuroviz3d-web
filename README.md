@@ -9,7 +9,7 @@ Visualizador 3D de redes neuronales en OpenGL, con entrenamiento real en PyTorch
 - [x] Fase 5: Animación del forward pass
 - [x] Fase 6: Loss/accuracy en tiempo real durante entrenamiento
 - [x] Fase 7: Embeddings 3D (PCA/t-SNE) con transición animada
-- [~] Fase 8: Pulido — cámara libre (hecho), picking (hecho), UI con ImGui (pendiente)
+- [x] Fase 8: Pulido — cámara libre, picking de neuronas, UI con ImGui (completa)
 
 ## Controles
 - Click + arrastrar: rota la cámara
@@ -22,4 +22,5 @@ Visualizador 3D de redes neuronales en OpenGL, con entrenamiento real en PyTorch
 - WASD: mueve la cámara libre (solo en modo FREE)
 - R / F: sube / baja la cámara libre (solo en modo FREE)
 - Click derecho: selecciona una neurona (solo en modo NETWORK + cámara ORBITAL), resalta con glow y muestra capa/índice/activación en consola
+- Panel ImGui (arriba a la izquierda): info general (FPS, sample activo, entrenamiento), datos de la neurona seleccionada, botones para alternar modo y camara, sliders de velocidad/sensibilidad de camara libre
 - ESC: salir
