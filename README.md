@@ -24,3 +24,5 @@ Visualizador 3D de redes neuronales en OpenGL, con entrenamiento real en PyTorch
 - Click derecho: selecciona una neurona (solo en modo NETWORK + cámara ORBITAL), resalta con glow y muestra capa/índice/activación en consola
 - Panel ImGui (arriba a la izquierda): info general (FPS, sample activo, entrenamiento), datos de la neurona seleccionada, botones para alternar modo y camara, sliders de velocidad/sensibilidad de camara libre
 - ESC: salir
+## Demo
+![demo](\neuro3D.png)
